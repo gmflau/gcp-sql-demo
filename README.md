@@ -2,7 +2,7 @@
 Redis Enterprise as write-behind cache on GCP
 
 
-### Deploy write-pubsub as Cloud Run Service to pick up keyspace notifications and send to a Google Cloud PubSub topic
+### Deploy write-pubsub as Cloud Run Service to pick up keyspace notifications in Redis and send to a Google Cloud PubSub topic
 ```
 pushd write-behind/write-pubsub
 
@@ -20,7 +20,7 @@ REDIS_PASSWORD=G9HxADlYc4ckq54fhxz5utv2fh8LxkB5
 popd
 ```
    
-### Deploy pubsub-sql on Google Cloud Function to pick up keyspace changes to a backend Cloud SQL 
+### Deploy pubsub-sql on Google Cloud Function to pick up & apply keyspace changes to a backend Cloud SQL 
 ```
 pushd write-behind/pubsub-sql
 gcloud functions deploy pubsub_sql --trigger-topic=glau-topic --region=us-central1  --runtime python310 
