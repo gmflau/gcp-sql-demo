@@ -22,23 +22,29 @@ from google.cloud import pubsub_v1
 
 app = Flask(__name__)
 
-redis_host = os.environ.get('REDISHOST', 'redis-14222.mc147-1.us-east1-mz.gcp.cloud.rlrcp.com')
-redis_port = int(os.environ.get('REDISPORT', 14222))
-redis_pass = os.environ.get('REDISPASSWORD', 'G9HxADlYc4ckq54fhxz5utv2fh8LxkB5')
-#redis_client = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_pass, charset="utf-8", decode_responses=True)
-redis_client = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_pass, decode_responses=True)
+# Configure the following environment variables via app.yaml
+app.config['PUBSUB_TOPIC'] = os.environ['PUBSUB_TOPIC']
+app.config['GOOGLE_CLOUD_PROJECT'] = os.environ['GOOGLE_CLOUD_PROJECT']
+app.config['REDIS_HOST'] = os.environ['REDIS_HOST']
+app.config['REDIS_PORT'] = os.environ['REDIS_PORT']
+app.config['REDIS_PASSWORD'] = os.environ['REDIS_PASSWORD']
 
+redis_client = redis.StrictRedis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'],
+                   password=app.config['REDIS_PASSWORD'], decode_responses=True)
+
+
+# Subcribe to all keyspaces changes (KEA)
 pubsub = redis_client.pubsub()  
 pubsub.psubscribe('__keyspace@0__:*')
 
-project_id = "central-beach-194106"
 publisher = pubsub_v1.PublisherClient()
-topic_id = "glau-topic"
-topic_path = publisher.topic_path(project_id, topic_id)
+topic_path = publisher.topic_path(app.config['GOOGLE_CLOUD_PROJECT'], app.config['PUBSUB_TOPIC'])
 
+
+# Keyspace notification detection loop
 while True:
     message = pubsub.get_message()
-    time.sleep(0.01)
+    time.sleep(0.5)
     if message is None:
        continue
 
@@ -51,7 +57,7 @@ while True:
     # Publishes a message
     try:
         future = publisher.publish(topic_path, message_bytes)
-        print(future.result())  # Verify the publish succeeded
+        print("FUTURE => " + future.result())  # Verify the publish succeeded
     except Exception as e:
         print(e)
 
@@ -61,4 +67,5 @@ def main():
     return 'dummy!'
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+

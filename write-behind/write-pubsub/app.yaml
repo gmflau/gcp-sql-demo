@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-runtime: python27
-api_version: 1
-threadsafe: true
+runtime: python39
 
-handlers:
-- url: /.*
-  script: main.app
+service: write-pubsub
 
-libraries:
-- name: flask
-  version: "0.12"
-
-service: write-pubsubs
+#[START env]
+env_variables:
+  GOOGLE_CLOUD_PROJECT: '<YOUR_PROJECT_ID>'
+  PUBSUB_TOPIC: '<YOUR_TOPIC>'
+  REDIS_HOST: '<YOUR REDIS ENTERPRISE DB ENDPOINT>'
+  REDIS_PORT: '<YOUR REDIS ENTERPRISE DB PORT>'
+  REDIS_PASSWORD: '<YOUR REDIS ENTERPRISE DB PASSWORD>'
+#[END env]
