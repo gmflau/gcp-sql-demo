@@ -26,9 +26,9 @@ db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
 db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
 
 # Create a DB connection
-host = '/cloudsql/{}'.format(db_connection_name)
-cnx = psycopg2.connect(dbname=db_name, user=db_user,
-          password=db_password, host=host)
+#host = '/cloudsql/{}'.format(db_connection_name)
+#cnx = psycopg2.connect(dbname=db_name, user=db_user,
+#          password=db_password, host=host)
 
 # Instantiates a Pub/Sub client
 publisher = pubsub_v1.PublisherClient()
@@ -38,5 +38,23 @@ def pubsub_sql(event, context):
     # Print out the data from Pub/Sub, to prove that it worked
     #print(event['data'])
     print("Message from PubSub - Topic: glau-topic")
-    print(base64.b64decode(event['data']))
+    message = base64.b64decode(event['data'])
+    print(message)
+    data = message.decode('utf-8')
+    print(data)
+    parsed_json=json.loads(data)
+    print(parsed_json)
+    print(parsed_json['data'])
+    operation=parsed_json['data']['message']['data']
+    print(parsed_json['data']['message']['data'])
+    
+    match operation:
+        case 'hset':
+            print("The operation is hset")
+        case 'set':
+            print("The operattion is set")
+        case other:
+            print("No match found")    
+
+
 
