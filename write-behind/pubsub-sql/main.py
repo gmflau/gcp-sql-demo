@@ -16,9 +16,19 @@
 import base64
 import json
 import os
-
+import psycopg2
 from google.cloud import pubsub_v1
 
+# Initialize DB connection parameters
+db_user = os.environ.get('CLOUD_SQL_USERNAME')
+db_password = os.environ.get('CLOUD_SQL_PASSWORD')
+db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
+db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+
+# Create a DB connection
+host = '/cloudsql/{}'.format(db_connection_name)
+cnx = psycopg2.connect(dbname=db_name, user=db_user,
+          password=db_password, host=host)
 
 # Instantiates a Pub/Sub client
 publisher = pubsub_v1.PublisherClient()
@@ -29,4 +39,4 @@ def pubsub_sql(event, context):
     #print(event['data'])
     print("Message from PubSub - Topic: glau-topic")
     print(base64.b64decode(event['data']))
-# [END functions_pubsub_subscribe]
+

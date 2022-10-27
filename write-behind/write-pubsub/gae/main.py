@@ -20,23 +20,31 @@ import json
 from flask import Flask
 from google.cloud import pubsub_v1
 
-# Configure the following environment variables via app.yaml
-pubsub_topic = os.environ['PUBSUB_TOPIC']
-google_cloud_project = os.environ['GOOGLE_CLOUD_PROJECT']
-redis_host = os.environ['REDIS_HOST']
-redis_port = os.environ['REDIS_PORT']
-redis_password = os.environ['REDIS_PASSWORD']
+app = Flask(__name__)
 
-redis_client = redis.StrictRedis(host=redis_host, port=redis_port,
-                   password=redis_password, decode_responses=True)
+# Configure the following environment variables via app.yaml
+app.config['PUBSUB_TOPIC'] = os.environ['PUBSUB_TOPIC']
+app.config['GOOGLE_CLOUD_PROJECT'] = os.environ['GOOGLE_CLOUD_PROJECT']
+app.config['REDIS_HOST'] = os.environ['REDIS_HOST']
+app.config['REDIS_PORT'] = os.environ['REDIS_PORT']
+app.config['REDIS_PASSWORD'] = os.environ['REDIS_PASSWORD']
+
+redis_client = redis.StrictRedis(host=app.config['REDIS_HOST'], port=app.config['REDIS_PORT'],
+                   password=app.config['REDIS_PASSWORD'], decode_responses=True)
+
+
+# Subcribe to all keyspaces changes (KEA)
+pubsub = redis_client.pubsub()  
+pubsub.psubscribe('__keyspace@0__:*')
+
+publisher = pubsub_v1.PublisherClient()
+topic_path = publisher.topic_path(app.config['GOOGLE_CLOUD_PROJECT'], app.config['PUBSUB_TOPIC'])
 
 
 def process():
     # Subcribe to all keyspaces changes (KEA)
     ps = redis_client.pubsub()
     ps.psubscribe('__keyspace@0__:*')
-    publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(google_cloud_project, pubsub_topic)
 
     for message in ps.listen():
         print("Insdie for loop")
@@ -55,7 +63,6 @@ def process():
             print("FUTURE => " + future.result())  # Verify the publish succeeded
         except Exception as e:
             print(e)
-
 
 if __name__ == "__main__":
     process()
