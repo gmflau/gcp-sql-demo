@@ -43,9 +43,15 @@ popd
 ### Deploy pubsub-sql on Google Cloud Function to pick up & apply keyspace changes to a backend Cloud SQL 
 ```
 pushd write-behind/pubsub-sql
+
 gcloud functions deploy pubsub_sql \
 --trigger-topic=glau-topic \
 --region=us-central1 \
---runtime python310 
+--runtime python310 \
+--set-env-vars=CLOUD_SQL_USERNAME=postgres,\
+CLOUD_SQL_PASSWORD=redis,\
+CLOUD_SQL_DATABASE_NAME=postgres,\
+CLOUD_SQL_CONNECTION_NAME=central-beach-194106:us-central1:glau-postgres-db
+
 popd
 ```

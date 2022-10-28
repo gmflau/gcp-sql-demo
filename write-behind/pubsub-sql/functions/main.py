@@ -16,7 +16,7 @@
 import base64
 import json
 import os
-import psycopg2
+import sqlalchemy
 from google.cloud import pubsub_v1
 
 # Initialize DB connection parameters
@@ -24,11 +24,13 @@ db_user = os.environ.get('CLOUD_SQL_USERNAME')
 db_password = os.environ.get('CLOUD_SQL_PASSWORD')
 db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
 db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+table_name = "car_dealers"
+table_field = "id,make,model,year,state"
 
-# Create a DB connection
-#host = '/cloudsql/{}'.format(db_connection_name)
-#cnx = psycopg2.connect(dbname=db_name, user=db_user,
-#          password=db_password, host=host)
+
+# PostgreSQL
+driver_name = 'postgres+pg8000'
+query_string =  dict({"unix_sock": "/cloudsql/{}/.s.PGSQL.5432".format(db_connection_name)})
 
 # Instantiates a Pub/Sub client
 publisher = pubsub_v1.PublisherClient()
@@ -57,4 +59,31 @@ def pubsub_sql(event, context):
             print("No match found")    
 
 
-
+    table_field_value = (parsed_json['data']['message']['channel']).split(':')[2] + ",'toyota','4runner','2011','CA'"    
+    #table_field_value = "2001,'toyota','4runner','2011','CA'"
+    print("** table_field_value => " + table_field_value)
+    stmt = sqlalchemy.text('insert into {} ({}) values ({})'.format(table_name, table_field, table_field_value))    
+    print("** db_password => ")
+    print(db_password)
+    print("** user => ")
+    print(db_user)
+    db = sqlalchemy.create_engine(
+      sqlalchemy.engine.url.URL(
+        drivername=driver_name,
+        username=db_user,
+        password=db_password,
+        database=db_name,
+        query=query_string,
+      ),
+      pool_size=5,
+      max_overflow=2,
+      pool_timeout=30,
+      pool_recycle=1800
+    )
+    try:
+        with db.connect() as conn:
+            conn.execute(stmt)
+    except Exception as e:
+        print('** Error: {}'.format(str(e)))
+        return 'Error: {}'.format(str(e))
+    return 'ok'
