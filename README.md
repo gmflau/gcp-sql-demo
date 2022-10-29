@@ -51,7 +51,10 @@ gcloud functions deploy pubsub_sql \
 --set-env-vars=CLOUD_SQL_USERNAME=postgres,\
 CLOUD_SQL_PASSWORD=redis,\
 CLOUD_SQL_DATABASE_NAME=postgres,\
-CLOUD_SQL_CONNECTION_NAME=central-beach-194106:us-central1:glau-postgres-db
+CLOUD_SQL_CONNECTION_NAME=central-beach-194106:us-central1:glau-postgres-db,\
+REDIS_HOST=redis-11052.c21576.us-west1-mz.gcp.cloud.rlrcp.com,\
+REDIS_PORT=11052,\
+REDIS_PASSWORD=SgYx59ymRC2BmuQk7Lb14c0fKmgH1h0j
 
 popd
 ```

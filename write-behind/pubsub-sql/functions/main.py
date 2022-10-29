@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2022 Redis, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -16,24 +16,48 @@
 import base64
 import json
 import os
+import redis
 import sqlalchemy
+import process_hash
 from google.cloud import pubsub_v1
 
-# Initialize DB connection parameters
+
+# Initialize Redis connection
+redis_host = os.environ['REDIS_HOST']
+redis_port = os.environ['REDIS_PORT']
+redis_password = os.environ['REDIS_PASSWORD']
+redis_client = redis.StrictRedis(host=redis_host, port=redis_port,
+                   password=redis_password, decode_responses=True)
+
+# Initialize PostgreSQL DB connection parameters
 db_user = os.environ.get('CLOUD_SQL_USERNAME')
 db_password = os.environ.get('CLOUD_SQL_PASSWORD')
 db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
 db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
 table_name = "car_dealers"
 table_field = "id,make,model,year,state"
-
-
-# PostgreSQL
 driver_name = 'postgres+pg8000'
 query_string =  dict({"unix_sock": "/cloudsql/{}/.s.PGSQL.5432".format(db_connection_name)})
 
+
 # Instantiates a Pub/Sub client
 publisher = pubsub_v1.PublisherClient()
+
+
+# Create SQLAlchemy Engine
+db = sqlalchemy.create_engine(
+       sqlalchemy.engine.url.URL(
+         drivername=driver_name,
+         username=db_user,
+         password=db_password,
+         database=db_name,
+         query=query_string,
+       ),
+       pool_size=5,
+       max_overflow=2,
+       pool_timeout=30,
+       pool_recycle=1800
+     )
 
 # Triggered from a message on a Cloud Pub/Sub topic.
 def pubsub_sql(event, context):
@@ -42,48 +66,17 @@ def pubsub_sql(event, context):
     print("Message from PubSub - Topic: glau-topic")
     message = base64.b64decode(event['data'])
     print(message)
-    data = message.decode('utf-8')
-    print(data)
-    parsed_json=json.loads(data)
-    print(parsed_json)
-    print(parsed_json['data'])
-    operation=parsed_json['data']['message']['data']
-    print(parsed_json['data']['message']['data'])
-    
+    msg_json=json.loads(message.decode('utf-8'))
+    print(msg_json['data']['message']['data'])
+    operation=msg_json['data']['message']['data']
+    print(msg_json['data']['message']['data'])
+
     match operation:
         case 'hset':
             print("The operation is hset")
+            process_hash.hset(db, redis_client, msg_json)
         case 'set':
             print("The operattion is set")
         case other:
             print("No match found")    
 
-
-    table_field_value = (parsed_json['data']['message']['channel']).split(':')[2] + ",'toyota','4runner','2011','CA'"    
-    #table_field_value = "2001,'toyota','4runner','2011','CA'"
-    print("** table_field_value => " + table_field_value)
-    stmt = sqlalchemy.text('insert into {} ({}) values ({})'.format(table_name, table_field, table_field_value))    
-    print("** db_password => ")
-    print(db_password)
-    print("** user => ")
-    print(db_user)
-    db = sqlalchemy.create_engine(
-      sqlalchemy.engine.url.URL(
-        drivername=driver_name,
-        username=db_user,
-        password=db_password,
-        database=db_name,
-        query=query_string,
-      ),
-      pool_size=5,
-      max_overflow=2,
-      pool_timeout=30,
-      pool_recycle=1800
-    )
-    try:
-        with db.connect() as conn:
-            conn.execute(stmt)
-    except Exception as e:
-        print('** Error: {}'.format(str(e)))
-        return 'Error: {}'.format(str(e))
-    return 'ok'
