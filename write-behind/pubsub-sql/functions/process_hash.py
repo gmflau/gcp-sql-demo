@@ -16,9 +16,6 @@ import sqlalchemy
 import os
 
 
-table_name = "car_dealers"
-table_field = "id,make,model,year,state"
-
 def hset(db, redis_client, msg_json):
     channel = msg_json['data']['message']['channel']
     redis_key = channel.split(':')[1] + ":" + channel.split(':')[2]
@@ -28,10 +25,17 @@ def hset(db, redis_client, msg_json):
     # TO DO:  
     # hgetall from Redis from key
     # construct table_field_value accordingly
-    redis_res = redis_client.hgetall(redis_key)
-    print(redis_res)
-    table_field_value = db_key + ",'toyota','4runner','2011','CA'"   
-    print("** table_field_value => " + table_field_value)
+    redis_hash_key = redis_client.hkeys(redis_key)
+    redis_hash_value = redis_client.hvals(redis_key)
+    redis_hash_key_value = redis_client.hgetall(redis_key)
+    for key in redis_hash_key:
+        print('Key = {}, Value = {}'.format(key, redis_hash_key_value[key]))
+    table_name = channel.split(':')[1]
+    table_column = 'id,' + ','.join(redis_hash_key)
+    redis_hash_value.insert(0, db_key)
+    table_column_value = ','.join("'" + item + "'" for item in redis_hash_value)
+    #table_column_value = db_key + ',' + ','.join("'" + item + "'" for item in redis_hash_value)
+    print('table_column = {}, table_column_value = {}'.format(table_column, table_column_value))
 
     stmt = sqlalchemy.text('select count(*) from {} where id={}'.format(table_name, db_key))
     try:
@@ -44,7 +48,7 @@ def hset(db, redis_client, msg_json):
                # TO DO: Update SQL
             else:
                print("** new row")
-               stmt = sqlalchemy.text('insert into {} ({}) values ({})'.format(table_name, table_field, table_field_value)) 
+               stmt = sqlalchemy.text('insert into {} ({}) values ({})'.format(table_name, table_column, table_column_value)) 
                conn.execute(stmt)
             return
     except Exception as e:
