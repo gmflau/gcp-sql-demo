@@ -19,6 +19,7 @@ import os
 import redis
 import sqlalchemy
 import process_hash
+import process_del
 from google.cloud import pubsub_v1
 
 
@@ -69,14 +70,17 @@ def pubsub_sql(event, context):
     msg_json=json.loads(message.decode('utf-8'))
     print(msg_json['data']['message']['data'])
     operation=msg_json['data']['message']['data']
-    print(msg_json['data']['message']['data'])
+    print('** operation => {}'.format(operation))
 
     match operation:
         case 'hset':
-            print("The operation is hset")
+            print("This operation is hset")
             process_hash.hset(db, redis_client, msg_json)
         case 'set':
-            print("The operattion is set")
+            print("This operation is set")
+        case 'del':
+            print("This operation is del")
+            process_del.execute(db, msg_json)
         case other:
             print("No match found")    
 
