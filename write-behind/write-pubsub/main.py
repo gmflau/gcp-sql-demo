@@ -15,7 +15,7 @@
 import base64
 import os
 import redis
-import time
+import datetime
 import json
 from flask import Flask
 from google.cloud import pubsub_v1
@@ -27,15 +27,17 @@ redis_host = os.environ['REDIS_HOST']
 redis_port = os.environ['REDIS_PORT']
 redis_password = os.environ['REDIS_PASSWORD']
 
-redis_client = redis.StrictRedis(host=redis_host, port=redis_port,
-                   password=redis_password, decode_responses=True)
-
 
 def process():
     # Subcribe to all keyspaces changes (KEA)
+    redis_client = redis.StrictRedis(host=redis_host, port=redis_port,
+                   password=redis_password, decode_responses=True)
     ps = redis_client.pubsub()
     ps.psubscribe('__keyspace@0__:*')
-    publisher = pubsub_v1.PublisherClient()
+
+    publisher_options = pubsub_v1.types.PublisherOptions(enable_message_ordering=True)
+    publisher = pubsub_v1.PublisherClient(publisher_options=publisher_options)
+
     topic_path = publisher.topic_path(google_cloud_project, pubsub_topic)
 
     for message in ps.listen():
@@ -48,10 +50,11 @@ def process():
         })
         message_bytes = message_json.encode('utf-8')
         print(message_bytes)
+        ordering_key = str(datetime.datetime.now())
 
         # Publishes a message
         try:
-            future = publisher.publish(topic_path, message_bytes)
+            future = publisher.publish(topic_path, data=message_bytes, ordering_key=ordering_key)
             print("FUTURE => " + future.result())  # Verify the publish succeeded
         except Exception as e:
             print(e)

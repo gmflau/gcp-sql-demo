@@ -65,6 +65,7 @@ def pubsub_sql(event, context):
     # Print out the data from Pub/Sub, to prove that it worked
     #print(event['data'])
     print("Message from PubSub - Topic: glau-topic")
+    print(event)
     message = base64.b64decode(event['data'])
     print(message)
     msg_json=json.loads(message.decode('utf-8'))
