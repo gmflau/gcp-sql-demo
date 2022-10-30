@@ -31,11 +31,6 @@ def hset(db, redis_client, msg_json):
     for key in redis_hash_key:
         print('Key = {}, Value = {}'.format(key, redis_hash_key_value[key]))
     table_name = channel.split(':')[1]
-    table_column = 'id,' + ','.join(redis_hash_key)
-    redis_hash_value.insert(0, db_key)
-    table_column_value = ','.join("'" + item + "'" for item in redis_hash_value)
-    #table_column_value = db_key + ',' + ','.join("'" + item + "'" for item in redis_hash_value)
-    print('table_column = {}, table_column_value = {}'.format(table_column, table_column_value))
 
     stmt = sqlalchemy.text('select count(*) from {} where id={}'.format(table_name, db_key))
     try:
@@ -46,8 +41,21 @@ def hset(db, redis_client, msg_json):
             if row[0] > 0:
                print("** row EXISTS")
                # TO DO: Update SQL
+               print("** update existing row")
+               set_stmt = ""
+               for key in redis_hash_key:
+                  set_stmt = set_stmt + key + " = '" + redis_hash_key_value[key] + "',"
+               print("** set_stmt")
+               print(set_stmt[:-1])
+               stmt = sqlalchemy.text('update {} set {} where id={}'.format(table_name, set_stmt[:-1], db_key))
+               conn.execute(stmt)
             else:
                print("** new row")
+               table_column = 'id,' + ','.join(redis_hash_key)
+               redis_hash_value.insert(0, db_key)
+               table_column_value = ','.join("'" + item + "'" for item in redis_hash_value)
+               #table_column_value = db_key + ',' + ','.join("'" + item + "'" for item in redis_hash_value)
+               print('table_column = {}, table_column_value = {}'.format(table_column, table_column_value))
                stmt = sqlalchemy.text('insert into {} ({}) values ({})'.format(table_name, table_column, table_column_value)) 
                conn.execute(stmt)
             return
