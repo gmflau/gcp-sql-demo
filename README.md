@@ -7,19 +7,20 @@ Inside Cloud Shell:
 ```
 gcloud sql connect glau-postgres-db --database=postgres --user=postgres
 ```
-
-
-### For local testing
+  
+### Accessing the Redis instance:
+```
+redis-cli -h redis-11052.c21576.us-west1-mz.gcp.cloud.rlrcp.com -p 11052
+```
+   
+### Deploy write-pubsub on Google Appe Engine (Flexible) to pick up keyspace notifications in Redis and send to a Google Cloud PubSub topic
 ```
 export PUBSUB_TOPIC=glau-topic
 export PROJECT_ID=central-beach-194106
 export REDIS_HOST=redis-14222.mc147-1.us-east1-mz.gcp.cloud.rlrcp.com
 export REDIS_PORT=14222
 export REDIS_PASSWORD=G9HxADlYc4ckq54fhxz5utv2fh8LxkB5
-```
 
-### Deploy write-pubsub on Google Appe Engine (Flexible) to pick up keyspace notifications in Redis and send to a Google Cloud PubSub topic
-```
 pushd write-behind/write-pubsub/gae-flex
 
 gcloud app deploy write-pubsub 
@@ -36,11 +37,6 @@ export REDIS_PORT=11052
 export REDIS_PASSWORD=SgYx59ymRC2BmuQk7Lb14c0fKmgH1h0j
 
 python3 main.py
-```
-  
-### Accessing the Redis instance:
-```
-redis-cli -h redis-11052.c21576.us-west1-mz.gcp.cloud.rlrcp.com -p 11052
 ```
   
 
