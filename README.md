@@ -2,6 +2,13 @@
 Redis Enterprise as write-behind cache on GCP
 
 
+### Accessing the backend CloudSQL PostgreSQL
+Inside Cloud Shell:
+```
+gcloud sql connect glau-postgres-db --database=postgres --user=postgres
+```
+
+
 ### For local testing
 ```
 export PUBSUB_TOPIC=glau-topic
@@ -19,7 +26,23 @@ gcloud app deploy write-pubsub
 
 popd
 ```
+  
+Run locally:
+```
+export PUBSUB_TOPIC=glau-topic
+export GOOGLE_CLOUD_PROJECT=central-beach-194106
+export REDIS_HOST=redis-11052.c21576.us-west1-mz.gcp.cloud.rlrcp.com
+export REDIS_PORT=11052
+export REDIS_PASSWORD=SgYx59ymRC2BmuQk7Lb14c0fKmgH1h0j
 
+python3 main.py
+```
+  
+### Accessing the Redis instance:
+```
+redis-cli -h redis-11052.c21576.us-west1-mz.gcp.cloud.rlrcp.com -p 11052
+```
+  
 
 ### Deploy write-pubsub as Cloud Run Service to pick up keyspace notifications in Redis and send to a Google Cloud PubSub topic
 ```
