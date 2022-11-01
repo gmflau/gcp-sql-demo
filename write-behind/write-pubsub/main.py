@@ -50,7 +50,7 @@ def process():
         })
         message_bytes = message_json.encode('utf-8')
         print(message_bytes)
-        ordering_key = str(datetime.datetime.now())
+        ordering_key = "write-behind"
 
         # Publishes a message
         try:
